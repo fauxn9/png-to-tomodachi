@@ -1,0 +1,333 @@
+/* ============================================================
+   TOMODACHI CANVAS TOOL — Retro-futuristic Nintendo aesthetic
+   ============================================================ */
+:root {
+    --bg:       #090c18;
+    --surface:  #111628;
+    --surface2: #1a2040;
+    --border:   #2a3560;
+    --coral:    #ff6b6b;
+    --mint:     #4ecdc4;
+    --yellow:   #ffe66d;
+    --text:     #e8eaf6;
+    --muted:    #7986b3;
+    --success:  #6ee7b7;
+    --error:    #fca5a5;
+    --r:        16px;
+    --rs:       8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+}
+
+/* Boot screen */
+.boot-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+}
+.boot-logo {
+    font-size: 64px;
+    animation: spin 2s linear infinite;
+    color: var(--mint);
+    filter: drop-shadow(0 0 20px var(--mint));
+}
+.boot-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    animation: blink 1s step-end infinite;
+}
+@keyframes spin  { to { transform: rotate(360deg); } }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* App shell */
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background:
+        radial-gradient(ellipse 80% 40% at 20% 0%, rgba(78,205,196,.07) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(192,132,252,.06) 0%, transparent 60%),
+        var(--bg);
+}
+
+/* Header */
+.app-header {
+    padding: 40px 24px 20px;
+    text-align: center;
+}
+.app-header::after {
+    content: '';
+    display: block;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin-top: 32px;
+}
+.header-badge {
+    display: inline-block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--mint);
+    background: rgba(78,205,196,.12);
+    border: 1px solid rgba(78,205,196,.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    margin-bottom: 16px;
+}
+h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 3vw, 22px);
+    line-height: 1.6;
+    background: linear-gradient(135deg, var(--coral) 0%, var(--yellow) 50%, var(--mint) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(255,107,107,.3));
+}
+.header-sub {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Grid */
+.main-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 32px 24px;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+}
+@media (max-width: 680px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* Panels */
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: relative;
+    overflow: hidden;
+}
+.panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.02) 0%, transparent 60%);
+    pointer-events: none;
+}
+.panel-import { border-top: 3px solid var(--coral); }
+.panel-export { border-top: 3px solid var(--mint); }
+
+/* Panel title */
+.panel-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.panel-import .panel-title { color: var(--coral); }
+.panel-export .panel-title { color: var(--mint); }
+.panel-icon {
+    width: 36px; height: 36px;
+    border-radius: var(--rs);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+.panel-import .panel-icon { background: rgba(255,107,107,.15); }
+.panel-export .panel-icon { background: rgba(78,205,196,.15); }
+
+/* Drop zone */
+.drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: var(--rs);
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    background: var(--surface2);
+}
+.drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--coral);
+    background: rgba(255,107,107,.06);
+}
+.panel-export .drop-zone:hover,
+.panel-export .drop-zone.drag-over {
+    border-color: var(--mint);
+    background: rgba(78,205,196,.06);
+}
+.drop-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+.drop-label { font-weight: 800; font-size: 14px; margin-bottom: 4px; }
+.drop-sub   { color: var(--muted); font-size: 12px; }
+
+/* Options */
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+}
+.option-row input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--coral);
+    cursor: pointer;
+}
+.panel-export .option-row input[type="checkbox"] { accent-color: var(--mint); }
+
+/* Buttons */
+.btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 20px;
+    border: none;
+    border-radius: var(--rs);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    transition: all .15s;
+    width: 100%;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-import {
+    background: linear-gradient(135deg, var(--coral) 0%, #ff8e53 100%);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(255,107,107,.3);
+}
+.btn-import:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(255,107,107,.45);
+}
+.btn-export {
+    background: linear-gradient(135deg, var(--mint) 0%, #26d0ce 100%);
+    color: #0a1a1a;
+    box-shadow: 0 4px 20px rgba(78,205,196,.3);
+}
+.btn-export:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(78,205,196,.45);
+}
+
+/* Status badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.status-badge.idle    { background: rgba(121,134,179,.15); color: var(--muted); }
+.status-badge.working { background: rgba(255,230,109,.12); color: var(--yellow); }
+.status-badge.done    { background: rgba(110,231,183,.12); color: var(--success); }
+.status-badge.error   { background: rgba(252,165,165,.12); color: var(--error); }
+.spinner {
+    width: 12px; height: 12px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: inline-block;
+}
+
+/* Log */
+.log-box {
+    background: #060810;
+    border: 1px solid var(--border);
+    border-radius: var(--rs);
+    padding: 12px 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    max-height: 110px;
+    overflow-y: auto;
+    line-height: 1.7;
+}
+.log-box:empty::before { content: '> En attente…'; opacity: .4; }
+
+/* Download list */
+.download-list { display: flex; flex-direction: column; gap: 8px; }
+.download-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--rs);
+    padding: 10px 14px;
+    gap: 12px;
+}
+.file-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.btn-dl {
+    flex-shrink: 0;
+    background: rgba(255,230,109,.15);
+    border: 1px solid rgba(255,230,109,.3);
+    color: var(--yellow);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'Nunito', sans-serif;
+}
+.btn-dl:hover { background: rgba(255,230,109,.25); transform: translateY(-1px); }
+
+/* File selected indicator */
+.file-selected {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--yellow);
+    text-align: center;
+    padding: 6px 10px;
+    background: rgba(255,230,109,.08);
+    border-radius: var(--rs);
+    border: 1px solid rgba(255,230,109,.2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Footer */
+.app-footer {
+    padding: 20px 24px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    font-family: 'Press Start 2P', monospace;
+    opacity: .4;
+}
