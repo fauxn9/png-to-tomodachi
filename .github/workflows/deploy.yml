@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]          # se déclenche à chaque push sur main
+  workflow_dispatch:             # permet aussi un déclenchement manuel
+
+# Permissions requises pour pousser sur gh-pages
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout du code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Installation de .NET 9
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # 3. Build de production Blazor WASM
+      #    --base-path injecte automatiquement le bon <base href>
+      - name: Publish
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          dotnet publish TomodachiWeb/TomodachiWeb.csproj \
+            -c Release \
+            -p:GHPages=true \
+            -p:BlazorBaseHref="/${REPO_NAME}/" \
+            -o published
+
+      # 4. Patch de <base href> dans index.html avec le vrai nom du dépôt
+      - name: Patch base href
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          sed -i "s|<base href=\"/\" />|<base href=\"/${REPO_NAME}/\" />|g" \
+            published/wwwroot/index.html
+
+      # 5. Copie de 404.html (nécessaire pour le routing SPA sur GH Pages)
+      - name: Copy 404.html
+        run: cp published/wwwroot/404.html published/wwwroot/404.html || true
+
+      # 6. Déploiement sur la branche gh-pages
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: published/wwwroot
+          force_orphan: true

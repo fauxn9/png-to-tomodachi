@@ -1,0 +1,237 @@
+@page "/"
+@inject IJSRuntime JS
+
+<div class="app-shell">
+
+    <header class="app-header">
+        <div class="header-badge">◆ TOMODACHI LIFE : LIVING THE DREAM ◆</div>
+        <h1>CANVAS<br />TOOL</h1>
+        <p class="header-sub">Convertis tes images en fichiers jeu — 100&nbsp;% dans le navigateur</p>
+    </header>
+
+    <div class="main-grid">
+
+        <!-- ══ IMPORT : PNG → .zs ══ -->
+        <div class="panel panel-import">
+            <div class="panel-title">
+                <div class="panel-icon">🖼️</div>
+                PNG → JEU
+            </div>
+
+            <div class="drop-zone @(_iDrag ? "drag-over" : "")"
+                 @ondragenter="() => _iDrag = true"
+                 @ondragleave="() => _iDrag = false"
+                 @ondrop="() => _iDrag = false">
+                <InputFile OnChange="OnImportFile" accept=".png"
+                           style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
+                <span class="drop-icon">🎨</span>
+                <div class="drop-label">Dépose un fichier .png</div>
+                <div class="drop-sub">ou clique pour choisir</div>
+            </div>
+
+            @if (_iFile is not null)
+            {
+                <div class="file-selected">📄 @_iFile.Name (@Size(_iFile.Size))</div>
+            }
+
+            <label class="option-row">
+                <input type="checkbox" @bind="_iNoSrgb" />
+                <span>--no-srgb (ignorer la conversion sRGB ↔ linéaire)</span>
+            </label>
+
+            <span class="status-badge @Cls(_iStatus)">
+                @if (_iStatus == St.Working) { <span class="spinner"></span> }
+                @Lbl(_iStatus, _iOutputs.Count, "fichier(s)", "fichier")
+            </span>
+
+            <button class="btn btn-import"
+                    disabled="@(_iFile is null || _iStatus == St.Working)"
+                    @onclick="RunImport">
+                ▶ CONVERTIR
+            </button>
+
+            @if (_iLog.Count > 0)
+            {
+                <div class="log-box">@foreach (var l in _iLog) { <div>@l</div> }</div>
+            }
+
+            @if (_iOutputs.Count > 0)
+            {
+                <div class="download-list">
+                    @foreach (var f in _iOutputs)
+                    {
+                        <div class="download-item">
+                            <span class="file-name">@f.Filename</span>
+                            <button class="btn-dl" @onclick="() => Download(f)">⬇ DL</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- ══ EXPORT : .zs → PNG ══ -->
+        <div class="panel panel-export">
+            <div class="panel-title">
+                <div class="panel-icon">💾</div>
+                .ZS → PNG
+            </div>
+
+            <div class="drop-zone @(_eDrag ? "drag-over" : "")"
+                 @ondragenter="() => _eDrag = true"
+                 @ondragleave="() => _eDrag = false"
+                 @ondrop="() => _eDrag = false">
+                <InputFile OnChange="OnExportFile" accept=".zs"
+                           style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
+                <span class="drop-icon">📦</span>
+                <div class="drop-label">Dépose un fichier .zs</div>
+                <div class="drop-sub">.canvas.zs / .ugctex.zs / _Thumb_ugctex.zs</div>
+            </div>
+
+            @if (_eFile is not null)
+            {
+                <div class="file-selected">📄 @_eFile.Name (@Size(_eFile.Size))</div>
+            }
+
+            <label class="option-row">
+                <input type="checkbox" @bind="_eNoSrgb" />
+                <span>--no-srgb (ignorer la conversion sRGB ↔ linéaire)</span>
+            </label>
+
+            <span class="status-badge @Cls(_eStatus)">
+                @if (_eStatus == St.Working) { <span class="spinner"></span> }
+                @Lbl(_eStatus, _eOutputs.Count, "PNG exporté(s)", "PNG")
+            </span>
+
+            <button class="btn btn-export"
+                    disabled="@(_eFile is null || _eStatus == St.Working)"
+                    @onclick="RunExport">
+                ▶ EXPORTER
+            </button>
+
+            @if (_eLog.Count > 0)
+            {
+                <div class="log-box">@foreach (var l in _eLog) { <div>@l</div> }</div>
+            }
+
+            @if (_eOutputs.Count > 0)
+            {
+                <div class="download-list">
+                    @foreach (var f in _eOutputs)
+                    {
+                        <div class="download-item">
+                            <span class="file-name">@f.Filename</span>
+                            <button class="btn-dl" @onclick="() => Download(f)">⬇ DL</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <footer class="app-footer">TOMODACHI CANVAS TOOL · 100% CLIENT-SIDE · AUCUN FICHIER ENVOYÉ SUR UN SERVEUR</footer>
+
+</div>
+
+@code {
+    enum St { Idle, Working, Done, Error }
+
+    // Import state
+    IBrowserFile?    _iFile;
+    bool             _iNoSrgb;
+    St               _iStatus = St.Idle;
+    List<string>     _iLog    = new();
+    List<OutputFile> _iOutputs = new();
+    bool             _iDrag;
+
+    // Export state
+    IBrowserFile?    _eFile;
+    bool             _eNoSrgb;
+    St               _eStatus = St.Idle;
+    List<string>     _eLog    = new();
+    List<OutputFile> _eOutputs = new();
+    bool             _eDrag;
+
+    void OnImportFile(InputFileChangeEventArgs e)
+    {
+        _iFile = e.File; _iOutputs = new(); _iLog = new(); _iStatus = St.Idle;
+    }
+    void OnExportFile(InputFileChangeEventArgs e)
+    {
+        _eFile = e.File; _eOutputs = new(); _eLog = new(); _eStatus = St.Idle;
+    }
+
+    async Task RunImport()
+    {
+        if (_iFile is null) return;
+        _iStatus = St.Working; _iOutputs = new(); _iLog = new();
+        StateHasChanged();
+        try
+        {
+            byte[] bytes = await ReadFile(_iFile);
+            _iOutputs = await TextureProcessorAdapter.ImportPngAsync(bytes, _iNoSrgb, Log(_iLog));
+            _iStatus = _iOutputs.Count > 0 ? St.Done : St.Error;
+            if (_iOutputs.Count == 0) _iLog.Add("⚠ Aucun fichier généré.");
+        }
+        catch (Exception ex) { _iLog.Add($"ERREUR : {ex.Message}"); _iStatus = St.Error; }
+        StateHasChanged();
+    }
+
+    async Task RunExport()
+    {
+        if (_eFile is null) return;
+        _eStatus = St.Working; _eOutputs = new(); _eLog = new();
+        StateHasChanged();
+        try
+        {
+            byte[] bytes = await ReadFile(_eFile);
+            _eOutputs = await TextureProcessorAdapter.ExportZsAsync(bytes, _eFile.Name, _eNoSrgb, Log(_eLog));
+            _eStatus = _eOutputs.Count > 0 ? St.Done : St.Error;
+            if (_eOutputs.Count == 0) _eLog.Add("⚠ Aucun PNG généré.");
+        }
+        catch (Exception ex) { _eLog.Add($"ERREUR : {ex.Message}"); _eStatus = St.Error; }
+        StateHasChanged();
+    }
+
+    async Task Download(OutputFile f)
+    {
+        string ct  = f.Filename.EndsWith(".png") ? "image/png" : "application/octet-stream";
+        string b64 = Convert.ToBase64String(f.Data);
+        await JS.InvokeVoidAsync("downloadFile", f.Filename, ct, b64);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+
+    Action<string> Log(List<string> list) => msg =>
+    {
+        list.Add(msg);
+        InvokeAsync(StateHasChanged);
+    };
+
+    static async Task<byte[]> ReadFile(IBrowserFile file)
+    {
+        using var ms = new System.IO.MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 20 * 1024 * 1024).CopyToAsync(ms);
+        return ms.ToArray();
+    }
+
+    static string Cls(St s) => s switch
+    {
+        St.Working => "working", St.Done => "done", St.Error => "error", _ => "idle"
+    };
+
+    static string Lbl(St s, int count, string plural, string singular) => s switch
+    {
+        St.Working => "Traitement en cours…",
+        St.Done    => $"✓ {count} {(count > 1 ? plural : singular)} prêt(s)",
+        St.Error   => "✗ Erreur",
+        _          => "En attente d'un fichier"
+    };
+
+    static string Size(long b) => b switch
+    {
+        < 1024       => $"{b} o",
+        < 1024*1024  => $"{b/1024} Ko",
+        _            => $"{b/1024/1024:F1} Mo"
+    };
+}
